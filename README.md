@@ -23,5 +23,15 @@ A prototype chatbot connecting to a company's MCP server for product queries, us
 
 3.  **Run**:
     ```bash
-    streamlit run app.py
+    streamlit run src/app.py
     ```
+
+## File Structure
+- `src/`: Source code directory.
+    - `app.py`: Main entry point.
+    - `config.py`: Configuration and environment loading.
+    - `llm.py`: OpenRouter/LLM client setup.
+    - `mcp_client.py`: MCP server interaction logic.
+- `requirements.txt`: Project dependencies.
+
+If you encounter connection issues, ensure your network allows connecting to the AWS AppRunner URL. Calls to the MCP server require the `Accept: text/event-stream` header, which is handled in `src/app.py`.
