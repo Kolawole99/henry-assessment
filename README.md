@@ -1,10 +1,10 @@
 # MCP Customer Support Chatbot
 
-A prototype chatbot connecting to a company's MCP server for product queries, using OpenRouter (GPT-4o-mini) and Streamlit.
+A customer support chatbot using FastAPI, connecting to a company's MCP server for product queries via OpenRouter (GPT-4o-mini).
 
 ## Setup
 
-1.  **Envrionment**:
+1.  **Environment**:
     Ensure you have Python 3.11+ installed.
     ```bash
     python3.11 -m venv venv
@@ -23,15 +23,23 @@ A prototype chatbot connecting to a company's MCP server for product queries, us
 
 3.  **Run**:
     ```bash
-    streamlit run src/app.py
+    uvicorn src.main:app --reload
     ```
+    
+    Open your browser to `http://localhost:8000`
 
 ## File Structure
 - `src/`: Source code directory.
-    - `app.py`: Main entry point.
+    - `main.py`: FastAPI application entry point.
     - `config.py`: Configuration and environment loading.
     - `llm.py`: OpenRouter/LLM client setup.
     - `mcp_client.py`: MCP server interaction logic.
+- `static/`: Frontend files (HTML/CSS/JS).
 - `requirements.txt`: Project dependencies.
 
-If you encounter connection issues, ensure your network allows connecting to the AWS AppRunner URL. Calls to the MCP server require the `Accept: text/event-stream` header, which is handled in `src/app.py`.
+## API Endpoints
+- `GET /`: Serves the chat interface
+- `POST /api/chat`: Chat endpoint (accepts JSON with `message` and `conversation_id`)
+- `GET /api/health`: Health check
+
+## Troubleshooting
