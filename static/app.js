@@ -12,14 +12,14 @@ const conversationId = 'default';
 function addMessage(content, isUser = false, isError = false) {
     const messageDiv = document.createElement('div');
     messageDiv.className = `message ${isUser ? 'user-message' : isError ? 'error-message' : 'bot-message'}`;
-    
+
     const contentDiv = document.createElement('div');
     contentDiv.className = 'message-content';
     contentDiv.textContent = content;
-    
+
     messageDiv.appendChild(contentDiv);
     chatMessages.appendChild(messageDiv);
-    
+
     // Scroll to bottom
     chatMessages.scrollTop = chatMessages.scrollHeight;
 }
@@ -28,7 +28,7 @@ function addMessage(content, isUser = false, isError = false) {
 function setLoading(isLoading) {
     sendButton.disabled = isLoading;
     messageInput.disabled = isLoading;
-    
+
     if (isLoading) {
         sendIcon.classList.add('hidden');
         loadingIcon.classList.remove('hidden');
@@ -41,17 +41,30 @@ function setLoading(isLoading) {
 // Handle form submission
 chatForm.addEventListener('submit', async (e) => {
     e.preventDefault();
-    
+
     const message = messageInput.value.trim();
     if (!message) return;
-    
+
     // Add user message to chat
     addMessage(message, true);
     messageInput.value = '';
-    
+
     // Set loading state
     setLoading(true);
-    
+
+    // Add loading indicator message
+    const loadingDiv = document.createElement('div');
+    loadingDiv.className = 'message bot-message';
+    loadingDiv.id = 'loading-message';
+
+    const contentDiv = document.createElement('div');
+    contentDiv.className = 'message-content loading-content';
+    contentDiv.innerHTML = 'Thinking<span class="loading-dots"><span>.</span><span>.</span><span>.</span></span>';
+
+    loadingDiv.appendChild(contentDiv);
+    chatMessages.appendChild(loadingDiv);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+
     try {
         // Send message to API
         const response = await fetch('/api/chat', {
@@ -64,19 +77,32 @@ chatForm.addEventListener('submit', async (e) => {
                 conversation_id: conversationId
             })
         });
-        
+
+        // Remove loading indicator
+        const loadingMessage = document.getElementById('loading-message');
+        if (loadingMessage) {
+            loadingMessage.remove();
+        }
+
         if (!response.ok) {
             const error = await response.json();
             throw new Error(error.detail || 'Failed to get response');
         }
-        
+
         const data = await response.json();
-        
+
         // Add bot response to chat
         addMessage(data.response, false);
-        
+
     } catch (error) {
         console.error('Error:', error);
+
+        // Remove loading indicator
+        const loadingMessage = document.getElementById('loading-message');
+        if (loadingMessage) {
+            loadingMessage.remove();
+        }
+
         addMessage(`Error: ${error.message}`, false, true);
     } finally {
         setLoading(false);
