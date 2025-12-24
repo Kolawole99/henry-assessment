@@ -570,3 +570,130 @@ body {
 .place-order-btn:active {
     transform: translateY(0);
 }
+
+/* Order History */
+.order-history {
+    width: 100%;
+    margin: 8px 0;
+}
+
+.history-header {
+    margin-bottom: 12px;
+}
+
+.history-header h3 {
+    font-size: 18px;
+    color: #333;
+    margin: 0;
+}
+
+.orders-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.order-item {
+    background: white;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 16px;
+    transition: all 0.2s;
+}
+
+.order-item:hover {
+    border-color: #667eea;
+    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.1);
+}
+
+.order-item-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.order-id {
+    font-family: monospace;
+    font-weight: 600;
+    color: #333;
+    font-size: 14px;
+}
+
+.order-status {
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.status-completed {
+    background: #d4edda;
+    color: #155724;
+}
+
+.status-pending {
+    background: #fff3cd;
+    color: #856404;
+}
+
+.status-cancelled {
+    background: #f8d7da;
+    color: #721c24;
+}
+
+.order-item-details {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.order-date {
+    font-size: 13px;
+    color: #666;
+    margin: 0;
+}
+
+.order-products {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.order-products li {
+    font-size: 14px;
+    color: #333;
+    padding: 4px 0;
+    font-family: monospace;
+}
+
+/* Empty Orders State */
+.empty-orders {
+    text-align: center;
+    padding: 40px 20px;
+    background: white;
+    border: 2px dashed #e0e0e0;
+    border-radius: 12px;
+}
+
+.empty-icon {
+    font-size: 64px;
+    margin-bottom: 16px;
+    opacity: 0.5;
+}
+
+.empty-orders h3 {
+    font-size: 20px;
+    color: #333;
+    margin: 0 0 8px 0;
+}
+
+.empty-orders p {
+    font-size: 14px;
+    color: #666;
+    margin: 0;
+    line-height: 1.5;
+}

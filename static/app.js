@@ -160,6 +160,11 @@ function addMessage(content, isUser = false, isError = false) {
                 contentDiv.appendChild(carousel);
                 currentProducts = parsed.products;
             }
+            // Order history list
+            else if (parsed.type === 'order_history' && parsed.orders) {
+                const orderHistory = renderOrderHistory(parsed.orders);
+                contentDiv.appendChild(orderHistory);
+            }
             // Order confirmation card
             else if (parsed.customer_id && parsed.order_details) {
                 const orderCard = renderOrderCard(parsed);
@@ -178,6 +183,64 @@ function addMessage(content, isUser = false, isError = false) {
     messageDiv.appendChild(contentDiv);
     chatMessages.appendChild(messageDiv);
     chatMessages.scrollTop = chatMessages.scrollHeight;
+}
+
+// Render order history
+function renderOrderHistory(orders) {
+    const historyDiv = document.createElement('div');
+    historyDiv.className = 'order-history';
+
+    // Check if orders array is empty
+    if (!orders || orders.length === 0) {
+        historyDiv.innerHTML = `
+            <div class="empty-orders">
+                <div class="empty-icon">📦</div>
+                <h3>No Orders Yet</h3>
+                <p>You haven't placed any orders yet. Browse our products and place your first order!</p>
+            </div>
+        `;
+        return historyDiv;
+    }
+
+    let historyHTML = `
+        <div class="history-header">
+            <h3>📦 Your Orders (${orders.length})</h3>
+        </div>
+        <div class="orders-list">
+    `;
+
+    orders.forEach(order => {
+        const statusClass = order.status === 'completed' ? 'status-completed' :
+            order.status === 'pending' ? 'status-pending' : 'status-cancelled';
+
+        historyHTML += `
+            <div class="order-item">
+                <div class="order-item-header">
+                    <span class="order-id">Order #${order.order_id.substring(0, 8)}</span>
+                    <span class="order-status ${statusClass}">${order.status}</span>
+                </div>
+                <div class="order-item-details">
+                    <p class="order-date">${new Date(order.created_at).toLocaleDateString()}</p>
+                    <ul class="order-products">
+        `;
+
+        order.items.forEach(item => {
+            historyHTML += `<li>${item.product_id} × ${item.quantity}</li>`;
+        });
+
+        historyHTML += `
+                    </ul>
+                </div>
+            </div>
+        `;
+    });
+
+    historyHTML += `
+        </div>
+    `;
+
+    historyDiv.innerHTML = historyHTML;
+    return historyDiv;
 }
 
 // Set loading state
