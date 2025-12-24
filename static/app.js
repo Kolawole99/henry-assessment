@@ -37,11 +37,16 @@ function renderProductCarousel(products) {
             <div class="product-info">
                 <h4 class="product-name">${product.name}</h4>
                 ${product.category ? `<p class="product-category">${product.category}</p>` : ''}
+                <p class="product-sku">SKU: ${product.id}</p>
                 <div class="product-details">
                     <span class="product-price">$${product.price.toFixed(2)}</span>
                     <span class="product-stock">${product.stock} in stock</span>
                 </div>
-                <button class="select-product-btn" onclick="selectProduct('${product.name.replace(/'/g, "\\'")}')">
+                <div class="quantity-selector">
+                    <label for="qty-${index}">Quantity:</label>
+                    <input type="number" id="qty-${index}" class="quantity-input" value="1" min="1" max="${product.stock}">
+                </div>
+                <button class="select-product-btn" onclick="selectProduct('${product.id}', '${product.name.replace(/'/g, "\\'")}', ${index})">
                     Select
                 </button>
             </div>
@@ -72,8 +77,11 @@ function scrollCarousel(event, direction) {
 }
 
 // Select product
-function selectProduct(productName) {
-    messageInput.value = `I'd like to order: ${productName}`;
+function selectProduct(sku, productName, index) {
+    const quantityInput = document.getElementById(`qty-${index}`);
+    const quantity = quantityInput ? quantityInput.value : 1;
+
+    messageInput.value = `I'd like to order ${quantity} x ${productName} (SKU: ${sku})`;
     messageInput.focus();
 }
 
