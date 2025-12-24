@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MCP Customer Support Bot</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="chat-container">
+        <div class="chat-header">
+            <h1>🤖 Customer Support Bot</h1>
+            <p>Powered by MCP & OpenRouter</p>
+        </div>
+        
+        <div class="chat-messages" id="chatMessages">
+            <div class="message bot-message">
+                <div class="message-content">
+                    Hello! I'm your customer support assistant. How can I help you today?
+                </div>
+            </div>
+        </div>
+        
+        <div class="chat-input-container">
+            <form id="chatForm">
+                <input 
+                    type="text" 
+                    id="messageInput" 
+                    placeholder="Type your message..." 
+                    autocomplete="off"
+                    required
+                />
+                <button type="submit" id="sendButton">
+                    <span id="sendIcon">Send</span>
+                    <span id="loadingIcon" class="hidden">⏳</span>
+                </button>
+            </form>
+        </div>
+    </div>
+    
+    <script src="/static/app.js"></script>
+</body>
+</html>
