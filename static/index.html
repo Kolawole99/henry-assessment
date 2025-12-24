@@ -1,43 +1,69 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MCP Customer Support Bot</title>
+    <title>Customer Support Bot</title>
     <link rel="stylesheet" href="/static/style.css">
 </head>
+
 <body>
     <div class="chat-container">
         <div class="chat-header">
-            <h1>🤖 Customer Support Bot</h1>
-            <p>Powered by MCP & OpenRouter</p>
-        </div>
-        
-        <div class="chat-messages" id="chatMessages">
-            <div class="message bot-message">
-                <div class="message-content">
-                    Hello! I'm your customer support assistant. How can I help you today?
+            <div class="header-content">
+                <div>
+                    <h1>🤖 Customer Support Bot</h1>
+                    <p>Powered by MCP & OpenRouter</p>
+                </div>
+                <div class="user-info" id="userInfo" style="display: none;">
+                    <span id="userEmail"></span>
+                    <button class="logout-btn" onclick="logout()">Logout</button>
                 </div>
             </div>
         </div>
-        
+
+        <div class="chat-messages" id="chatMessages">
+            <div class="message bot-message">
+                <div class="message-content">
+                    👋 Hello! I'm your customer support assistant. Feel free to browse our products or ask me anything.
+                    I can help you find monitors, printers, and more!
+                </div>
+            </div>
+        </div>
+
         <div class="chat-input-container">
             <form id="chatForm">
-                <input 
-                    type="text" 
-                    id="messageInput" 
-                    placeholder="Type your message..." 
-                    autocomplete="off"
-                    required
-                />
+                <input type="text" id="messageInput" placeholder="Type your message..." autocomplete="off">
                 <button type="submit" id="sendButton">
                     <span id="sendIcon">Send</span>
-                    <span id="loadingIcon" class="hidden">⏳</span>
+                    <span id="loadingIcon" class="hidden">...</span>
                 </button>
             </form>
         </div>
     </div>
-    
+
+    <!-- Login Modal -->
+    <div class="modal" id="loginModal">
+        <div class="modal-content">
+            <h2>Authentication Required</h2>
+            <p>Please enter your email and PIN to place an order</p>
+            <form id="loginForm">
+                <div class="form-group">
+                    <label for="emailInput">Email</label>
+                    <input type="email" id="emailInput" placeholder="your.email@example.com" required>
+                </div>
+                <div class="form-group">
+                    <label for="pinInput">PIN</label>
+                    <input type="password" id="pinInput" placeholder="Enter your PIN" required maxlength="4">
+                </div>
+                <div class="error-message" id="loginError" style="display: none;"></div>
+                <button type="submit" class="login-btn">Login</button>
+            </form>
+        </div>
+    </div>
+
     <script src="/static/app.js"></script>
 </body>
+
 </html>

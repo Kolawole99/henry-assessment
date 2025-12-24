@@ -8,7 +8,41 @@ from datetime import timedelta
 
 logger = logging.getLogger(__name__)
 
-async def connect_and_execute(user_input, messages, client, model_name):
+async def verify_customer(email: str, pin: str):
+    """
+    Verify customer credentials using MCP server.
+    Returns dict with success status and user_id if successful.
+    """
+    logger.info(f"Verifying customer: {email}")
+    async with streamablehttp_client(
+        MCP_SERVER_URL,
+        timeout=timedelta(seconds=60),
+        sse_read_timeout=timedelta(seconds=300)
+    ) as (read, write, _):
+        async with ClientSession(read, write) as session:
+            await session.initialize()
+            
+            # Call verify_customer tool
+            result = await session.call_tool("verify_customer_pin", {
+                "email": email,
+                "pin": pin
+            })
+            
+            # Process result
+            content_text = ""
+            for content in result.content:
+                if content.type == "text":
+                    content_text += content.text
+            
+            # Parse the response
+            try:
+                import json
+                data = json.loads(content_text)
+                return data
+            except:
+                return {"success": False, "error": "Invalid response from server"}
+
+async def connect_and_execute(user_input, messages, client, model_name, user_id=None):
     """
     Connects to MCP server, negotiates tools, and runs the chat loop.
     Returns the final response content.
@@ -38,9 +72,7 @@ async def connect_and_execute(user_input, messages, client, model_name):
             current_messages = messages + [{"role": "user", "content": user_input}]
             
             # Add system message for product formatting
-            system_message = {
-                "role": "system",
-                "content": """When listing products, you MUST respond with ONLY a JSON object in this exact format (no additional text):
+            system_message_content = """When listing products, you MUST respond with ONLY a JSON object in this exact format (no additional text):
 {
   "type": "product_list",
   "products": [
@@ -61,6 +93,13 @@ IMPORTANT:
 - Do NOT format it as markdown code blocks
 - Just return the raw JSON object
 - For non-product responses, respond normally in plain text"""
+
+            if user_id:
+                system_message_content += f"\n\nCurrent authenticated user ID: {user_id}"
+            
+            system_message = {
+                "role": "system",
+                "content": system_message_content
             }
             
             # Insert system message at the beginning if not already present

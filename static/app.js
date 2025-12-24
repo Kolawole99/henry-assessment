@@ -4,9 +4,105 @@ const messageInput = document.getElementById('messageInput');
 const sendButton = document.getElementById('sendButton');
 const sendIcon = document.getElementById('sendIcon');
 const loadingIcon = document.getElementById('loadingIcon');
+const loginModal = document.getElementById('loginModal');
+const loginForm = document.getElementById('loginForm');
+const loginError = document.getElementById('loginError');
+const userInfo = document.getElementById('userInfo');
+const userEmail = document.getElementById('userEmail');
 
 // Conversation ID (could be generated or from session)
 const conversationId = 'default';
+
+// Authentication state
+let currentUser = null;
+let pendingMessage = null;
+
+// Check if user is logged in on page load
+window.addEventListener('DOMContentLoaded', () => {
+    const savedUser = localStorage.getItem('currentUser');
+    if (savedUser) {
+        currentUser = JSON.parse(savedUser);
+        showUserInfo();
+    }
+    // Don't show login modal - allow anonymous browsing
+});
+
+// Show login modal
+function showLoginModal() {
+    loginModal.style.display = 'flex';
+    // Don't disable input - user can still browse
+}
+
+// Hide login modal
+function hideLoginModal() {
+    loginModal.style.display = 'none';
+    messageInput.focus();
+}
+
+// Show user info
+function showUserInfo() {
+    if (currentUser) {
+        userEmail.textContent = currentUser.email;
+        userInfo.style.display = 'flex';
+        hideLoginModal();
+    }
+}
+
+// Logout function
+function logout() {
+    currentUser = null;
+    localStorage.removeItem('currentUser');
+    userInfo.style.display = 'none';
+    showLoginModal();
+    // Clear chat
+    chatMessages.innerHTML = '';
+}
+
+// Handle login
+loginForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const email = document.getElementById('emailInput').value;
+    const pin = document.getElementById('pinInput').value;
+
+    loginError.style.display = 'none';
+
+    try {
+        const response = await fetch('/api/auth', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ email, pin })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            currentUser = {
+                user_id: data.user_id,
+                email: data.email
+            };
+            localStorage.setItem('currentUser', JSON.stringify(currentUser));
+            showUserInfo();
+            loginForm.reset();
+
+            // If there's a pending message, submit it
+            if (pendingMessage) {
+                messageInput.value = pendingMessage;
+                pendingMessage = null;
+                chatForm.dispatchEvent(new Event('submit'));
+            }
+        } else {
+            loginError.textContent = data.error || 'Invalid credentials';
+            loginError.style.display = 'block';
+        }
+    } catch (error) {
+        console.error('Login error:', error);
+        loginError.textContent = 'Login failed. Please try again.';
+        loginError.style.display = 'block';
+    }
+});
 
 // Store products globally for selection
 let currentProducts = [];
@@ -170,7 +266,8 @@ chatForm.addEventListener('submit', async (e) => {
             },
             body: JSON.stringify({
                 message: message,
-                conversation_id: conversationId
+                conversation_id: conversationId,
+                user_id: currentUser?.user_id
             })
         });
 

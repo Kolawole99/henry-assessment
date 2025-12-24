@@ -8,7 +8,7 @@ import logging
 
 from src.config import validate_config, MODEL_NAME
 from src.llm import get_llm_client
-from src.mcp_client import connect_and_execute
+from src.mcp_client import connect_and_execute, verify_customer
 
 logging.basicConfig(
     level=logging.INFO,
@@ -26,13 +26,53 @@ class Message(BaseModel):
     role: str
     content: str
 
+class AuthRequest(BaseModel):
+    email: str
+    pin: str
+
+class AuthResponse(BaseModel):
+    success: bool
+    user_id: str | None = None
+    email: str | None = None
+    error: str | None = None
+
 class ChatRequest(BaseModel):
     message: str
     conversation_id: str = "default"
+    user_id: str | None = None
 
 class ChatResponse(BaseModel):
     response: str
     conversation_id: str
+
+@app.post("/api/auth", response_model=AuthResponse)
+async def authenticate(request: AuthRequest):
+    """
+    Authenticate user with email and PIN using MCP verify_customer tool.
+    """
+    logger.info(f"Authentication attempt for: {request.email}")
+    try:
+        result = await verify_customer(request.email, request.pin)
+        
+        if result.get("success"):
+            logger.info(f"Authentication successful for: {request.email}")
+            return AuthResponse(
+                success=True,
+                user_id=result.get("user_id"),
+                email=request.email
+            )
+        else:
+            logger.warning(f"Authentication failed for: {request.email}")
+            return AuthResponse(
+                success=False,
+                error="Invalid email or PIN"
+            )
+    except Exception as e:
+        logger.error(f"Authentication error: {str(e)}", exc_info=True)
+        return AuthResponse(
+            success=False,
+            error="Authentication service unavailable"
+        )
 
 @app.post("/api/chat", response_model=ChatResponse)
 async def chat(request: ChatRequest):
@@ -53,8 +93,8 @@ async def chat(request: ChatRequest):
         logger.info("Starting MCP connection with 90s timeout")
         try:
             response_content = await asyncio.wait_for(
-                connect_and_execute(request.message, messages, client, MODEL_NAME),
-                timeout=90.0  # Increased: MCP server needs ~15s for initial handshake
+                connect_and_execute(request.message, messages, client, MODEL_NAME, request.user_id),
+                timeout=90.0
             )
         except asyncio.TimeoutError:
             logger.error("MCP connection timed out after 90 seconds")
@@ -83,6 +123,7 @@ async def health():
     """Health check endpoint."""
     return {"status": "ok"}
 
+# Serve static files
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
 @app.get("/")
