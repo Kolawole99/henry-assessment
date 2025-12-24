@@ -29,13 +29,8 @@ body {
 .chat-header {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     color: white;
-    padding: 20px 25px;
-}
-
-.header-content {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+    padding: 25px;
+    text-align: center;
 }
 
 .chat-header h1 {
@@ -46,28 +41,6 @@ body {
 .chat-header p {
     font-size: 14px;
     opacity: 0.9;
-}
-
-.user-info {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    font-size: 14px;
-}
-
-.logout-btn {
-    padding: 6px 16px;
-    background: rgba(255, 255, 255, 0.2);
-    color: white;
-    border: 1px solid rgba(255, 255, 255, 0.3);
-    border-radius: 16px;
-    font-size: 13px;
-    cursor: pointer;
-    transition: all 0.2s;
-}
-
-.logout-btn:hover {
-    background: rgba(255, 255, 255, 0.3);
 }
 
 .chat-messages {
@@ -512,4 +485,88 @@ body {
     border-radius: 8px;
     margin-bottom: 16px;
     font-size: 14px;
+}
+
+/* Order Confirmation Card */
+.order-card {
+    background: white;
+    border: 2px solid #667eea;
+    border-radius: 12px;
+    padding: 20px;
+    margin: 8px 0;
+    max-width: 100%;
+}
+
+.order-header {
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.order-header h3 {
+    margin: 0 0 8px 0;
+    color: #333;
+    font-size: 18px;
+}
+
+.customer-id {
+    margin: 0;
+    font-size: 12px;
+    color: #666;
+    font-family: monospace;
+}
+
+.order-items h4 {
+    margin: 0 0 12px 0;
+    color: #333;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.order-items ul {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 16px 0;
+}
+
+.order-items li {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 12px;
+    background: #f7f7f8;
+    border-radius: 6px;
+    margin-bottom: 8px;
+}
+
+.item-sku {
+    font-family: monospace;
+    color: #667eea;
+    font-weight: 600;
+}
+
+.item-qty {
+    color: #666;
+    font-size: 14px;
+}
+
+.place-order-btn {
+    width: 100%;
+    padding: 12px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.place-order-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.place-order-btn:active {
+    transform: translateY(0);
 }

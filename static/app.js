@@ -4,108 +4,13 @@ const messageInput = document.getElementById('messageInput');
 const sendButton = document.getElementById('sendButton');
 const sendIcon = document.getElementById('sendIcon');
 const loadingIcon = document.getElementById('loadingIcon');
-const loginModal = document.getElementById('loginModal');
-const loginForm = document.getElementById('loginForm');
-const loginError = document.getElementById('loginError');
-const userInfo = document.getElementById('userInfo');
-const userEmail = document.getElementById('userEmail');
 
-// Conversation ID (could be generated or from session)
+// Conversation ID
 const conversationId = 'default';
 
-// Authentication state
-let currentUser = null;
-let pendingMessage = null;
-
-// Check if user is logged in on page load
-window.addEventListener('DOMContentLoaded', () => {
-    const savedUser = localStorage.getItem('currentUser');
-    if (savedUser) {
-        currentUser = JSON.parse(savedUser);
-        showUserInfo();
-    }
-    // Don't show login modal - allow anonymous browsing
-});
-
-// Show login modal
-function showLoginModal() {
-    loginModal.style.display = 'flex';
-    // Don't disable input - user can still browse
-}
-
-// Hide login modal
-function hideLoginModal() {
-    loginModal.style.display = 'none';
-    messageInput.focus();
-}
-
-// Show user info
-function showUserInfo() {
-    if (currentUser) {
-        userEmail.textContent = currentUser.email;
-        userInfo.style.display = 'flex';
-        hideLoginModal();
-    }
-}
-
-// Logout function
-function logout() {
-    currentUser = null;
-    localStorage.removeItem('currentUser');
-    userInfo.style.display = 'none';
-    showLoginModal();
-    // Clear chat
-    chatMessages.innerHTML = '';
-}
-
-// Handle login
-loginForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
-
-    const email = document.getElementById('emailInput').value;
-    const pin = document.getElementById('pinInput').value;
-
-    loginError.style.display = 'none';
-
-    try {
-        const response = await fetch('/api/auth', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ email, pin })
-        });
-
-        const data = await response.json();
-
-        if (data.success) {
-            currentUser = {
-                user_id: data.user_id,
-                email: data.email
-            };
-            localStorage.setItem('currentUser', JSON.stringify(currentUser));
-            showUserInfo();
-            loginForm.reset();
-
-            // If there's a pending message, submit it
-            if (pendingMessage) {
-                messageInput.value = pendingMessage;
-                pendingMessage = null;
-                chatForm.dispatchEvent(new Event('submit'));
-            }
-        } else {
-            loginError.textContent = data.error || 'Invalid credentials';
-            loginError.style.display = 'block';
-        }
-    } catch (error) {
-        console.error('Login error:', error);
-        loginError.textContent = 'Login failed. Please try again.';
-        loginError.style.display = 'block';
-    }
-});
-
-// Store products globally for selection
+// Store products and order context
 let currentProducts = [];
+let currentOrderContext = null;
 
 // Product carousel rendering
 function renderProductCarousel(products) {
@@ -156,6 +61,48 @@ function renderProductCarousel(products) {
     return carouselDiv;
 }
 
+// Render order confirmation card
+function renderOrderCard(orderData) {
+    // Store order context for later use
+    currentOrderContext = {
+        customer_id: orderData.customer_id,
+        order_details: orderData.order_details
+    };
+
+    const card = document.createElement('div');
+    card.className = 'order-card';
+
+    let orderHTML = `
+        <div class="order-header">
+            <h3>📋 Order Confirmation</h3>
+            <p class="customer-id">Customer ID: ${orderData.customer_id}</p>
+        </div>
+        <div class="order-items">
+            <h4>Order Items:</h4>
+            <ul>
+    `;
+
+    orderData.order_details.forEach(item => {
+        orderHTML += `
+            <li>
+                <span class="item-sku">${item.product_id}</span>
+                <span class="item-qty">Quantity: ${item.quantity}</span>
+            </li>
+        `;
+    });
+
+    orderHTML += `
+            </ul>
+        </div>
+        <button class="place-order-btn" onclick="placeOrder()">
+            Place Order
+        </button>
+    `;
+
+    card.innerHTML = orderHTML;
+    return card;
+}
+
 // Scroll carousel
 function scrollCarousel(event, direction) {
     event.preventDefault();
@@ -163,7 +110,7 @@ function scrollCarousel(event, direction) {
     const track = carousel.querySelector('.carousel-track');
     if (!track) return;
 
-    const cardWidth = 320; // card width + gap
+    const cardWidth = 320;
     const scrollAmount = direction === 'next' ? cardWidth : -cardWidth;
 
     track.scrollBy({
@@ -181,6 +128,19 @@ function selectProduct(sku, productName, index) {
     messageInput.focus();
 }
 
+// Place order function
+function placeOrder() {
+    if (!currentOrderContext) {
+        addMessage('Error: No order context found', false, true);
+        return;
+    }
+
+    // Send order confirmation with full context
+    const message = `Please confirm and place my order. Customer ID: ${currentOrderContext.customer_id}, Order details: ${JSON.stringify(currentOrderContext.order_details)}`;
+    messageInput.value = message;
+    chatForm.dispatchEvent(new Event('submit'));
+}
+
 // Add message to chat
 function addMessage(content, isUser = false, isError = false) {
     const messageDiv = document.createElement('div');
@@ -189,20 +149,26 @@ function addMessage(content, isUser = false, isError = false) {
     const contentDiv = document.createElement('div');
     contentDiv.className = 'message-content';
 
-    // Try to parse as JSON for product carousel
+    // Try to parse as JSON for special rendering
     if (!isUser && !isError) {
         try {
             const parsed = JSON.parse(content);
+
+            // Product list carousel
             if (parsed.type === 'product_list' && parsed.products) {
-                // Render product carousel
                 const carousel = renderProductCarousel(parsed.products);
                 contentDiv.appendChild(carousel);
                 currentProducts = parsed.products;
-            } else {
+            }
+            // Order confirmation card
+            else if (parsed.customer_id && parsed.order_details) {
+                const orderCard = renderOrderCard(parsed);
+                contentDiv.appendChild(orderCard);
+            }
+            else {
                 contentDiv.textContent = content;
             }
         } catch (e) {
-            // Not JSON, render as text
             contentDiv.textContent = content;
         }
     } else {
@@ -211,8 +177,6 @@ function addMessage(content, isUser = false, isError = false) {
 
     messageDiv.appendChild(contentDiv);
     chatMessages.appendChild(messageDiv);
-
-    // Scroll to bottom
     chatMessages.scrollTop = chatMessages.scrollHeight;
 }
 
@@ -237,14 +201,10 @@ chatForm.addEventListener('submit', async (e) => {
     const message = messageInput.value.trim();
     if (!message) return;
 
-    // Add user message to chat
     addMessage(message, true);
     messageInput.value = '';
-
-    // Set loading state
     setLoading(true);
 
-    // Add loading indicator message
     const loadingDiv = document.createElement('div');
     loadingDiv.className = 'message bot-message';
     loadingDiv.id = 'loading-message';
@@ -258,7 +218,6 @@ chatForm.addEventListener('submit', async (e) => {
     chatMessages.scrollTop = chatMessages.scrollHeight;
 
     try {
-        // Send message to API
         const response = await fetch('/api/chat', {
             method: 'POST',
             headers: {
@@ -266,12 +225,10 @@ chatForm.addEventListener('submit', async (e) => {
             },
             body: JSON.stringify({
                 message: message,
-                conversation_id: conversationId,
-                user_id: currentUser?.user_id
+                conversation_id: conversationId
             })
         });
 
-        // Remove loading indicator
         const loadingMessage = document.getElementById('loading-message');
         if (loadingMessage) {
             loadingMessage.remove();
@@ -283,14 +240,11 @@ chatForm.addEventListener('submit', async (e) => {
         }
 
         const data = await response.json();
-
-        // Add bot response to chat
         addMessage(data.response, false);
 
     } catch (error) {
         console.error('Error:', error);
 
-        // Remove loading indicator
         const loadingMessage = document.getElementById('loading-message');
         if (loadingMessage) {
             loadingMessage.remove();
@@ -303,5 +257,4 @@ chatForm.addEventListener('submit', async (e) => {
     }
 });
 
-// Focus input on load
 messageInput.focus();

@@ -14,33 +14,44 @@ async def verify_customer(email: str, pin: str):
     Returns dict with success status and user_id if successful.
     """
     logger.info(f"Verifying customer: {email}")
-    async with streamablehttp_client(
-        MCP_SERVER_URL,
-        timeout=timedelta(seconds=60),
-        sse_read_timeout=timedelta(seconds=300)
-    ) as (read, write, _):
-        async with ClientSession(read, write) as session:
-            await session.initialize()
-            
-            # Call verify_customer tool
-            result = await session.call_tool("verify_customer_pin", {
-                "email": email,
-                "pin": pin
-            })
-            
-            # Process result
-            content_text = ""
-            for content in result.content:
-                if content.type == "text":
-                    content_text += content.text
-            
-            # Parse the response
-            try:
-                import json
-                data = json.loads(content_text)
-                return data
-            except:
-                return {"success": False, "error": "Invalid response from server"}
+    try:
+        async with streamablehttp_client(
+            MCP_SERVER_URL,
+            timeout=timedelta(seconds=60),
+            sse_read_timeout=timedelta(seconds=300)
+        ) as (read, write, _):
+            async with ClientSession(read, write) as session:
+                await session.initialize()
+                
+                # List tools to see what's available
+                tools_result = await session.list_tools()
+                logger.info(f"Available MCP tools: {[tool.name for tool in tools_result.tools]}")
+                
+                # Call verify_customer tool (try both possible names)
+                tool_name = "verify_customer"
+                result = await session.call_tool(tool_name, {
+                    "email": email,
+                    "pin": pin
+                })
+                
+                # Process result
+                content_text = ""
+                for content in result.content:
+                    if content.type == "text":
+                        content_text += content.text
+                
+                logger.info(f"MCP verify_customer response: {content_text}")
+                
+                # Parse the response
+                try:
+                    data = json.loads(content_text)
+                    return data
+                except Exception as e:
+                    logger.error(f"Failed to parse MCP response: {e}")
+                    return {"success": False, "error": "Invalid response from server"}
+    except Exception as e:
+        logger.error(f"MCP verification error: {str(e)}", exc_info=True)
+        return {"success": False, "error": f"Verification failed: {str(e)}"}
 
 async def connect_and_execute(user_input, messages, client, model_name, user_id=None):
     """
@@ -71,8 +82,11 @@ async def connect_and_execute(user_input, messages, client, model_name, user_id=
             
             current_messages = messages + [{"role": "user", "content": user_input}]
             
-            # Add system message for product formatting
-            system_message_content = """When listing products, you MUST respond with ONLY a JSON object in this exact format (no additional text):
+            # Add system message for product formatting and authentication
+            system_message_content = """You are a customer support assistant for a computer products company.
+
+PRODUCT LISTING:
+When listing products, you MUST respond with ONLY a JSON object in this exact format (no additional text):
 {
   "type": "product_list",
   "products": [
@@ -87,15 +101,46 @@ async def connect_and_execute(user_input, messages, client, model_name, user_id=
   ]
 }
 
-IMPORTANT: 
-- When you use the list_products tool, return ONLY the JSON object above, nothing else
+ORDER CONFIRMATION (BEFORE PLACEMENT):
+When preparing an order (after authentication, BEFORE placing it), respond with ONLY this JSON format:
+{
+  "customer_id": "customer_id_from_auth",
+  "order_details": [
+    {
+      "product_id": "SKU",
+      "quantity": 3
+    }
+  ]
+}
+
+IMPORTANT FOR PRODUCTS & ORDERS:
+- When you use the list_products tool, return ONLY the product list JSON
+- When preparing an order (after auth, before confirmation), return ONLY the order confirmation JSON
 - Do NOT add any explanatory text before or after the JSON
 - Do NOT format it as markdown code blocks
 - Just return the raw JSON object
-- For non-product responses, respond normally in plain text"""
+
+AUTHENTICATION & ORDERS FLOW:
+1. Users can browse products without authentication
+2. When a user wants to ORDER/BUY/PURCHASE a product, you MUST authenticate them first
+3. To authenticate: Ask for their email and PIN, then use the verify_customer tool
+4. After successful authentication, you'll receive a customer_id
+5. Prepare the order confirmation JSON with the customer_id and order_details
+6. User will see a card with "Place Order" button
+7. When user confirms (message will contain "Customer ID:" and "Order details:"):
+   - Extract the customer_id from the message
+   - Extract the order_details array from the message
+   - Call create_order tool with: {"customer_id": "extracted_id", "order_details": [extracted_array]}
+8. After create_order succeeds, respond with a success message in plain text (NOT JSON)
+9. If create_order fails, inform the user of the error
+
+CRITICAL: When you see a message like "Please confirm and place my order. Customer ID: xxx, Order details: [...]", 
+you MUST extract the customer_id and order_details and call the create_order tool immediately.
+
+For non-product, non-order responses, respond normally in plain text."""
 
             if user_id:
-                system_message_content += f"\n\nCurrent authenticated user ID: {user_id}"
+                system_message_content += f"\n\nCurrent authenticated customer ID: {user_id}"
             
             system_message = {
                 "role": "system",
