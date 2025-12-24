@@ -37,6 +37,36 @@ async def connect_and_execute(user_input, messages, client, model_name):
             
             current_messages = messages + [{"role": "user", "content": user_input}]
             
+            # Add system message for product formatting
+            system_message = {
+                "role": "system",
+                "content": """When listing products, you MUST respond with ONLY a JSON object in this exact format (no additional text):
+{
+  "type": "product_list",
+  "products": [
+    {
+      "id": "product_id",
+      "name": "Product Name",
+      "price": 123.45,
+      "stock": 10,
+      "category": "Category Name",
+      "image": "https://via.placeholder.com/300x200?text=Product+Name"
+    }
+  ]
+}
+
+IMPORTANT: 
+- When you use the list_products tool, return ONLY the JSON object above, nothing else
+- Do NOT add any explanatory text before or after the JSON
+- Do NOT format it as markdown code blocks
+- Just return the raw JSON object
+- For non-product responses, respond normally in plain text"""
+            }
+            
+            # Insert system message at the beginning if not already present
+            if not current_messages or current_messages[0].get("role") != "system":
+                current_messages = [system_message] + current_messages
+            
             logger.info(f"Calling LLM with {len(openai_tools)} tools")
             response = client.chat.completions.create(
                 model=model_name,
@@ -80,7 +110,10 @@ async def connect_and_execute(user_input, messages, client, model_name):
                 logger.info("Getting final response from LLM")
                 final_response = client.chat.completions.create(
                     model=model_name,
-                    messages=current_messages,
+                    messages=current_messages + [{
+                        "role": "system",
+                        "content": "Remember: If this is a product list, respond with ONLY the JSON object, no additional text."
+                    }],
                 )
                 return final_response.choices[0].message.content
             else:
