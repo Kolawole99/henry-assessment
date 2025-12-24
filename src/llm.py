@@ -1,5 +1,5 @@
 from openai import OpenAI
-from config import OPENROUTER_API_KEY
+from src.config import OPENROUTER_API_KEY
 
 def get_llm_client():
     """Returns an initialized OpenAI client connected to OpenRouter."""
